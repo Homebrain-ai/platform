@@ -1,0 +1,43 @@
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:80"
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - homebrain_db:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    environment:
+      - RAG_DOCS_DIR=/data/docs
+      - RAG_VECTOR_DIR=/data/chroma
+    volumes:
+      - /srv/homebrain/docs:/data/docs:ro
+      - /srv/homebrain/chroma:/data/chroma
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+
+volumes:
+  homebrain_db:
