@@ -1,6 +1,6 @@
 # Infra 🏠🧰
 
-Deploys backend image for GHCR
+Handles infrastructure for Homebrain-ai
 
 ## Quick Start 🚀
 
