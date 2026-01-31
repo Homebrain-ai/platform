@@ -1,1 +1,54 @@
 # 2. dependency review + CodeQL (optional)
+
+name: platform / security
+
+on:
+  workflow_call:
+    inputs:
+      codeql_languages:
+        type: string
+        required: true
+        description: "e.g. javascript-typescript, python, go, java, csharp"
+      build_command:
+        type: string
+        required: false
+        default: ""
+
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: security-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    # Only meaningful on PRs
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+
+  codeql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ inputs.codeql_languages }}
+
+      # For compiled languages (or weird builds), you may need to build to get good results.
+      - name: Build (optional)
+        if: ${{ inputs.build_command != '' }}
+        run: ${{ inputs.build_command }}
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4

@@ -1,1 +1,104 @@
 # 4. deploy to dev/stage/prod (Helm, etc.)
+
+name: platform / deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+        description: "dev | staging | prod (must exist as a GitHub Environment)"
+      release_name:
+        type: string
+        required: true
+      namespace:
+        type: string
+        required: false
+        default: "default"
+      chart:
+        type: string
+        required: true
+        description: "chart path or ref, e.g. ./charts/app"
+      values_file:
+        type: string
+        required: false
+        default: ""
+      image_repository:
+        type: string
+        required: false
+        default: ""
+      image_tag:
+        type: string
+        required: false
+        default: ""
+      helm_timeout:
+        type: string
+        required: false
+        default: "5m"
+
+    secrets:
+      KUBECONFIG_B64:
+        required: true
+
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.repository }}-${{ inputs.environment }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: latest
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl version --client
+          kubectl get ns "${{ inputs.namespace }}" >/dev/null 2>&1 || kubectl create ns "${{ inputs.namespace }}"
+
+      - name: Deploy with Helm
+        run: |
+          set -euo pipefail
+
+          VALUES_ARGS=""
+          if [ -n "${{ inputs.values_file }}" ]; then
+            VALUES_ARGS="-f ${{ inputs.values_file }}"
+          fi
+
+          SET_ARGS=""
+          if [ -n "${{ inputs.image_repository }}" ]; then
+            SET_ARGS="$SET_ARGS --set image.repository=${{ inputs.image_repository }}"
+          fi
+          if [ -n "${{ inputs.image_tag }}" ]; then
+            SET_ARGS="$SET_ARGS --set image.tag=${{ inputs.image_tag }}"
+          fi
+
+          helm upgrade --install "${{ inputs.release_name }}" "${{ inputs.chart }}" \
+            --namespace "${{ inputs.namespace }}" \
+            $VALUES_ARGS \
+            $SET_ARGS \
+            --wait \
+            --atomic \
+            --timeout "${{ inputs.helm_timeout }}"
