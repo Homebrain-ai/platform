@@ -1,1 +1,82 @@
-# lint/test/build
+# 1. lint/test/build
+
+name: run-ci
+
+on:
+  workflow_call:
+    inputs:
+      working_directory:
+        type: string
+        required: false
+        default: "."
+      runtime:
+        type: string
+        required: false
+        default: "python"
+
+      python_version:
+        type: string
+        required: false
+        default: "3.12"
+
+      install:
+        type: string
+        required: false
+        default: ""
+      lint:
+        type: string
+        required: false
+        default: ""
+      test:
+        type: string
+        required: false
+        default: ""
+      build:
+        type: string
+        required: false
+        default: ""
+
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        if: ${{ inputs.runtime == 'python' || inputs.runtime == 'both' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+          cache: pip
+
+      - name: Install
+        if: ${{ inputs.install != '' }}
+        run: ${{ inputs.install }}
+
+      - name: Lint
+        if: ${{ inputs.lint != '' }}
+        run: ${{ inputs.lint }}
+
+      - name: Test
+        if: ${{ inputs.test != '' }}
+        run: ${{ inputs.test }}
+
+      - name: Build
+        if: ${{ inputs.build != '' }}
+        run: ${{ inputs.build }}
