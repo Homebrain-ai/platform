@@ -1,6 +1,6 @@
 # 3. build/push image to GHCR
 
-name: platform / build image
+name: platform / build-image
 
 on:
   workflow_call:

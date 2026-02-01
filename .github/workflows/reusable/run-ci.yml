@@ -1,6 +1,6 @@
 # 1. lint/test/build
 
-name: run-ci
+name: platform / run-ci
 
 on:
   workflow_call:
