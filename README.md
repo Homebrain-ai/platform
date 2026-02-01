@@ -1,4 +1,4 @@
-# Infra 🏠🧰
+# Platform 🏠
 
 Handles infrastructure for Homebrain-ai
 
