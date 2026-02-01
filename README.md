@@ -1,8 +1,8 @@
-# Platform 🏠
+# Platform 🚀
 
 Handles infrastructure for Homebrain-ai
 
-## Quick Start 🚀
+## Quick Start ⚡
 
 Create and fill out `.env`, from `.env.template`.
 
