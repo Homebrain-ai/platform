@@ -1,4 +1,4 @@
-# 3. build/push image to GHCR
+# 4. build/push image to GHCR
 
 name: platform / build-image
 

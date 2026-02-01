@@ -1,4 +1,4 @@
-# 4. deploy to dev/stage/prod (Helm, etc.)
+# 5. deploy to dev/stage/prod (Helm, etc.)
 
 name: platform / deploy
 
