@@ -1,0 +1,49 @@
+name: platform / pr-template-check
+
+on:
+  workflow_call:
+    inputs:
+      marker:
+        description: "Marker string that must exist in the PR body"
+        required: false
+        type: string
+        default: "<!-- PR_TEMPLATE -->"
+      allow_drafts:
+        description: "If true, drafts can skip this check"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR template marker exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setFailed("This workflow must be called from a pull_request-triggered workflow.");
+              return;
+            }
+
+            if (pr.draft && ${{ inputs.allow_drafts }} === true) {
+              core.info("Draft PR detected; skipping template enforcement.");
+              return;
+            }
+
+            const body = pr.body || "";
+            const marker = `${{ inputs.marker }}`;
+
+            if (!body.includes(marker)) {
+              core.setFailed(
+                `Missing required PR template marker: ${marker}\n` +
+                `Please create/update the PR description using the repo PR template and keep the marker at the top.`
+              );
+            } else {
+              core.info("PR template marker detected.");
+            }
